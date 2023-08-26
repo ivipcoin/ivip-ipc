@@ -2,6 +2,7 @@ import { SimpleEventEmitter } from "ivipbase-core";
 import cluster from "cluster";
 import path from "path";
 import fs from "fs";
+import chokidar from "chokidar";
 import properLockfile from "proper-lockfile";
 
 interface NotificationContent {
@@ -94,11 +95,15 @@ function differenceInSeconds(date1: Date, date2: Date) {
 
 let timestamp = Date.now();
 
-const observerEvents = async () => {
-	try {
-		await prepareFile().catch(() => Promise.resolve());
+let timeDelay: NodeJS.Timeout | undefined = undefined;
 
-		while (true) {
+const observerEvents = () => {
+	clearTimeout(timeDelay);
+
+	timeDelay = setTimeout(async () => {
+		try {
+			await prepareFile().catch(() => Promise.resolve());
+
 			const lockfile = properLockfile.checkSync(pathRoot);
 
 			if (lockfile === false) {
@@ -149,19 +154,24 @@ const observerEvents = async () => {
 
 				properLockfile.unlockSync(pathRoot);
 			}
+		} catch {
+			if (properLockfile.checkSync(pathRoot)) {
+				await properLockfile.unlock(pathRoot).catch(() => {});
+			}
 
-			await new Promise((resolve) => setTimeout(resolve, 1000 + Math.round(Math.random() * 1000)));
+			setTimeout(observerEvents, 500 + Math.round(Math.random() * 500));
 		}
-	} catch {
-		if (properLockfile.checkSync(pathRoot)) {
-			await properLockfile.unlock(pathRoot).catch(() => {});
-		}
-
-		setTimeout(observerEvents, 1000 + Math.round(Math.random() * 1000));
-	}
+	}, 500);
 };
 
-observerEvents();
+chokidar
+	.watch(pathRoot)
+	.on("add", (file) => {
+		observerEvents();
+	})
+	.on("change", (file) => {
+		observerEvents();
+	});
 
 export default class IPC extends SimpleEventEmitter {
 	private id: number = Math.round(Math.random() * Date.now());
@@ -197,6 +207,8 @@ export default class IPC extends SimpleEventEmitter {
 				notifyCallbackMap.forEach((callback) => {
 					callback(content);
 				});
+
+				observerEvents();
 
 				resolve();
 			} catch (e) {

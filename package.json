@@ -1,6 +1,6 @@
 {
 	"name": "ivip-ipc",
-	"version": "1.0.3",
+	"version": "1.1.0",
 	"description": "O módulo ivip-ipc é uma biblioteca que fornece uma classe para facilitar a comunicação assíncrona entre processos no Node.js, usando um arquivo compartilhado como meio de troca de mensagens. Isso é especialmente útil em cenários de cluster ou em ambientes em que várias instâncias do aplicativo precisam se comunicar.",
 	"comments": {
 		"browser": "Webpack/browserify não suportável",
@@ -21,7 +21,7 @@
 		"build:esm": "tsc -p tsconfig.json && npx tsc-esm-fix ---target='dist/esm'",
 		"build:cjs": "tsc -p tsconfig-cjs.json",
 		"build:packages": "bash ./create-package-files",
-		"publish": "npm run build && npm pack && npm publish --access public"
+		"publish": "npm run build && npm pack && npm publish --access public && echo published!"
 	},
 	"keywords": [
 		"Inter-process communication",
@@ -49,6 +49,7 @@
 	},
 	"homepage": "https://github.com/ivipcoin/ivip-ipc#readme",
 	"dependencies": {
+		"chokidar": "^3.5.3",
 		"dotenv": "^16.0.3",
 		"ejs": "^3.1.8",
 		"ivipbase-core": "^1.5.2",

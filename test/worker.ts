@@ -12,3 +12,7 @@ ipc.notify("evento-personalizado", `Mensagem da notificação de [${process.pid}
 setTimeout(() => {
 	ipc.notify("evento-personalizado", `Mensagem da notificação de [${process.pid}] a 10s`);
 }, 10000);
+
+setTimeout(() => {
+	ipc.notify("evento-personalizado", `Mensagem da notificação de [${process.pid}] a 30s`);
+}, 30000);

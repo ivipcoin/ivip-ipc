@@ -7,6 +7,7 @@ const ivipbase_core_1 = require("ivipbase-core");
 const cluster_1 = __importDefault(require("cluster"));
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
+const chokidar_1 = __importDefault(require("chokidar"));
 const proper_lockfile_1 = __importDefault(require("proper-lockfile"));
 /** Verificam se o processo é um worker, primary ou master do cluster. */
 const isCluster = cluster_1.default.isWorker || cluster_1.default.isPrimary || cluster_1.default.isMaster;
@@ -79,10 +80,12 @@ function differenceInSeconds(date1, date2) {
     return diffInSeconds;
 }
 let timestamp = Date.now();
-const observerEvents = async () => {
-    try {
-        await prepareFile().catch(() => Promise.resolve());
-        while (true) {
+let timeDelay = undefined;
+const observerEvents = () => {
+    clearTimeout(timeDelay);
+    timeDelay = setTimeout(async () => {
+        try {
+            await prepareFile().catch(() => Promise.resolve());
             const lockfile = proper_lockfile_1.default.checkSync(pathRoot);
             if (lockfile === false) {
                 proper_lockfile_1.default.lockSync(pathRoot);
@@ -121,17 +124,23 @@ const observerEvents = async () => {
                 fs_1.default.writeFileSync(pathRoot, linesWrite.join("\n"), "utf-8");
                 proper_lockfile_1.default.unlockSync(pathRoot);
             }
-            await new Promise((resolve) => setTimeout(resolve, 1000 + Math.round(Math.random() * 1000)));
         }
-    }
-    catch (_a) {
-        if (proper_lockfile_1.default.checkSync(pathRoot)) {
-            await proper_lockfile_1.default.unlock(pathRoot).catch(() => { });
+        catch (_a) {
+            if (proper_lockfile_1.default.checkSync(pathRoot)) {
+                await proper_lockfile_1.default.unlock(pathRoot).catch(() => { });
+            }
+            setTimeout(observerEvents, 500 + Math.round(Math.random() * 500));
         }
-        setTimeout(observerEvents, 1000 + Math.round(Math.random() * 1000));
-    }
+    }, 500);
 };
-observerEvents();
+chokidar_1.default
+    .watch(pathRoot)
+    .on("add", (file) => {
+    observerEvents();
+})
+    .on("change", (file) => {
+    observerEvents();
+});
 class IPC extends ivipbase_core_1.SimpleEventEmitter {
     /**
      * A classe `IPC` é definida como uma subclasse de `SimpleEventEmitter` e exportada como padrão. Ela implementa a comunicação entre os processos.
@@ -162,6 +171,7 @@ class IPC extends ivipbase_core_1.SimpleEventEmitter {
                 notifyCallbackMap.forEach((callback) => {
                     callback(content);
                 });
+                observerEvents();
                 resolve();
             }
             catch (e) {
