@@ -1,6 +1,6 @@
 # ivip-ipc
 
-O módulo `ivip-ipc` é uma biblioteca que fornece uma classe para facilitar a comunicação assíncrona entre processos no Node.js, usando um arquivo compartilhado como meio de troca de mensagens. Isso é especialmente útil em cenários de cluster ou em ambientes em que várias instâncias do aplicativo precisam se comunicar.
+O módulo `ivip-ipc` é uma biblioteca que fornece uma classe para facilitar a comunicação assíncrona entre processos no Node.js, usando um arquivo compartilhado como meio de troca de mensagens. Isso é especialmente útil em cenários de cluster ou em ambientes em que várias instâncias do aplicativo precisam se comunicar sem se depender de um gerenciamento master (processo principal).
 
 ## Instalação
 
