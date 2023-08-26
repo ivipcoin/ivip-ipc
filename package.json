@@ -1,0 +1,64 @@
+{
+    "name": "ivip-ipc",
+    "version": "1.0.0",
+    "description": "O módulo ivip-ipc é uma biblioteca que fornece uma classe para facilitar a comunicação assíncrona entre processos no Node.js, usando um arquivo compartilhado como meio de troca de mensagens. Isso é especialmente útil em cenários de cluster ou em ambientes em que várias instâncias do aplicativo precisam se comunicar.",
+    "comments": {
+        "browser": "Webpack/browserify não suportável",
+        "exports": "Consulte README.md para obter mais informações sobre ivip-ipc"
+    },
+    "main": "dist/cjs/index.js",
+    "module": "./dist/esm/index.js",
+    "types": "./dist/types/index.d.ts",
+    "files": [
+        "dist/"
+    ],
+    "private": false,
+    "repository": "github:ivipcoin/ivip-ipc",
+    "scripts": {
+        "dev": "nodemon ./test",
+        "build": "npm run build:clean && npm run build:esm && npm run build:cjs && npm run build:packages && echo Done!",
+        "build:clean": "rimraf dist",
+        "build:esm": "tsc -p tsconfig.json && npx tsc-esm-fix ---target='dist/esm'",
+        "build:cjs": "tsc -p tsconfig-cjs.json",
+        "build:packages": "bash ./create-package-files",
+        "npm:publish": "npm run build && npm pack && npm publish --access public"
+    },
+    "keywords": [],
+    "author": "IVIPCOIN LTDA <desenvolvimento@ivipcoin.com> (https://ivipcoin.com)",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/ivipcoin/ivip-ipc/issues"
+    },
+    "homepage": "https://github.com/ivipcoin/ivip-ipc#readme",
+    "dependencies": {
+        "dotenv": "^16.0.3",
+        "ejs": "^3.1.8",
+        "ivipbase-core": "^1.5.0",
+        "proper-lockfile": "^4.1.2"
+    },
+    "devDependencies": {
+        "@types/proper-lockfile": "^4.1.2",
+        "@types/node": "^18.15.5",
+        "@typescript-eslint/eslint-plugin": "^6.2.1",
+        "@typescript-eslint/parser": "^6.2.1",
+        "eslint": "^8.46.0",
+        "esm": "^3.2.25",
+        "nodemon": "^3.0.1",
+        "rimraf": "^5.0.1",
+        "ts-node": "^10.9.1",
+        "tsc-esm-fix": "^2.20.14",
+        "tsconfig-paths": "^4.1.2",
+        "typescript": "^5.0.2"
+    },
+    "nodemonConfig": {
+        "restartable": "rs",
+        "ignore": [],
+        "watch": [
+            "src",
+            "test"
+        ],
+        "delay": 2500,
+        "exec": "node --loader ts-node/esm",
+        "ext": "js,ts"
+    }
+}

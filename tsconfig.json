@@ -1,0 +1,35 @@
+{
+    "compilerOptions": {
+        "lib": [
+            "esnext",
+            "dom"
+        ],
+        "listEmittedFiles": false,
+        "target": "es2020",
+        "module": "CommonJS",
+        "moduleResolution": "node",
+        "outDir": "./dist/esm",
+        "rootDir": "./src",
+        "strict": true,
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
+        "skipLibCheck": true,
+        "sourceMap": true,
+        "pretty": true,
+        "declaration": true,
+        "declarationMap": true,
+        "declarationDir": "./dist/types",
+        "resolveJsonModule": true,
+        "noImplicitAny": false,
+        "noEmitOnError": true,
+        "removeComments": false
+    },
+    "compileOnSave": false,
+    "include": [
+        "src/**/*.ts"
+    ],
+    "exclude": [
+        "node_modules",
+        "dist"
+    ]
+}

@@ -1,0 +1,7 @@
+# Exclude dev files from npm package
+src
+spec
+.eslintrc
+tsconfig*.*
+create-package-files
+test
