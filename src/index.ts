@@ -111,16 +111,15 @@ const observerEvents = async () => {
 					.filter((line: string) => line.trim() !== "")
 					.map(readLine);
 
-				let inProcess: boolean = false;
+				let inProcess: boolean = differenceInSeconds(new Date(timestamp), new Date()) < 5;
 
 				if (header.length && timestamp !== parseInt(header[0])) {
-					if (differenceInSeconds(new Date(parseInt(header[0])), new Date(timestamp)) > 10) {
+					if (differenceInSeconds(new Date(parseInt(header[0])), new Date(timestamp)) > 5) {
 						header = [];
 						lines = [];
 						inProcess = true;
 					} else {
 						timestamp = parseInt(header[0]);
-						inProcess = differenceInSeconds(new Date(parseInt(header[0])), new Date()) < 10;
 					}
 				}
 
@@ -193,7 +192,11 @@ export default class IPC extends SimpleEventEmitter {
 				};
 
 				pending.push(prepareLine([JSON.stringify(content), ipcId]));
-				this.emit(content.event, content.message);
+				//this.emit(content.event, content.message);
+
+				notifyCallbackMap.forEach((callback) => {
+					callback(content);
+				});
 
 				resolve();
 			} catch (e) {

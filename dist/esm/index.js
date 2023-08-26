@@ -91,16 +91,15 @@ const observerEvents = async () => {
                     .split(/\n/)
                     .filter((line) => line.trim() !== "")
                     .map(readLine);
-                let inProcess = false;
+                let inProcess = differenceInSeconds(new Date(timestamp), new Date()) < 5;
                 if (header.length && timestamp !== parseInt(header[0])) {
-                    if (differenceInSeconds(new Date(parseInt(header[0])), new Date(timestamp)) > 10) {
+                    if (differenceInSeconds(new Date(parseInt(header[0])), new Date(timestamp)) > 5) {
                         header = [];
                         lines = [];
                         inProcess = true;
                     }
                     else {
                         timestamp = parseInt(header[0]);
-                        inProcess = differenceInSeconds(new Date(parseInt(header[0])), new Date()) < 10;
                     }
                 }
                 if (header.length === 0) {
@@ -159,7 +158,10 @@ class IPC extends ivipbase_core_1.SimpleEventEmitter {
                     message: message,
                 };
                 pending.push(prepareLine([JSON.stringify(content), ipcId]));
-                this.emit(content.event, content.message);
+                //this.emit(content.event, content.message);
+                notifyCallbackMap.forEach((callback) => {
+                    callback(content);
+                });
                 resolve();
             }
             catch (e) {
