@@ -49,12 +49,34 @@ Encerra a comunicação IPC. Isso limpará todos os ouvintes de eventos e libera
 
 ### Eventos
 
-A classe IPC estende `SimpleEventEmitter`, permitindo que você ouça eventos usando o método `on`:
+A classe IPC estende `SimpleEventEmitter`, permitindo que você ouça eventos usando o método `on` e/ou `once`, e interrompimento de eventos usando o método `off`:
 
 ```javascript
-ipc.on('evento', (mensagem) => {
+const evento = (mensagem) => {
+  console.log('Evento recebido:', mensagem);
+};
+
+ipc.on('evento', evento);
+
+ipc.off('evento', evento);
+```
+
+```javascript
+const evento = (mensagem) => {
+  console.log('Evento recebido:', mensagem);
+};
+
+ipc.once('evento', evento);
+
+ipc.off('evento', evento);
+```
+
+```javascript
+const evento = ipc.on('evento', (mensagem) => {
   console.log('Evento recebido:', mensagem);
 });
+
+evento.stop(); // Substituindo o uso do método `off`
 ```
 
 ## Contribuindo
