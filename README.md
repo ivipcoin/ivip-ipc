@@ -15,7 +15,7 @@ npm install ivip-ipc
 Aqui está um exemplo básico de como você pode usar o `ivip-ipc` para comunicação entre processos:
 
 ```javascript
-const IPC = require('ivip-ipc');
+const IPC = require('ivip-ipc').default;
 
 // Crie uma instância da classe IPC
 const ipc = new IPC();
