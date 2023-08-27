@@ -116,10 +116,10 @@ const observerEvents = () => {
 					.filter((line: string) => line.trim() !== "")
 					.map(readLine);
 
-				let inProcess: boolean = differenceInSeconds(new Date(timestamp), new Date()) < 5;
+				let inProcess: boolean = header.includes(ipcId) && differenceInSeconds(new Date(timestamp), new Date()) < 5;
 
 				if (header.length && timestamp !== parseInt(header[0])) {
-					if (differenceInSeconds(new Date(parseInt(header[0])), new Date(timestamp)) > 5) {
+					if (!header.includes(ipcId) && differenceInSeconds(new Date(parseInt(header[0])), new Date(timestamp)) > 5) {
 						header = [];
 						lines = [];
 						inProcess = true;
