@@ -16,17 +16,15 @@ Aqui está um exemplo básico de como você pode usar o `ivip-ipc` para comunica
 
 ```javascript
 const IPC = require('ivip-ipc').default;
-
-// Crie uma instância da classe IPC
-const ipc = new IPC();
+//import IPC from "ivip-ipc";
 
 // Ouvir eventos
-ipc.on('evento-personalizado', (mensagem) => {
+IPC.on('evento-personalizado', (mensagem) => {
   console.log('Evento personalizado recebido:', mensagem);
 });
 
 // Enviar uma notificação para outros processos
-ipc.notify('evento-personalizado', 'Mensagem da notificação');
+IPC.notify('evento-personalizado', 'Mensagem da notificação');
 
 // Encerra a comunicação IPC
 // ipc.destroy();
@@ -56,9 +54,9 @@ const evento = (mensagem) => {
   console.log('Evento recebido:', mensagem);
 };
 
-ipc.on('evento', evento);
+IPC.on('evento', evento);
 
-ipc.off('evento', evento);
+IPC.off('evento', evento);
 ```
 
 ```javascript
@@ -66,18 +64,69 @@ const evento = (mensagem) => {
   console.log('Evento recebido:', mensagem);
 };
 
-ipc.once('evento', evento);
+IPC.once('evento', evento);
 
-ipc.off('evento', evento);
+IPC.off('evento', evento);
 ```
 
 ```javascript
-const evento = ipc.on('evento', (mensagem) => {
+const evento = IPC.on('evento', (mensagem) => {
   console.log('Evento recebido:', mensagem);
 });
 
 evento.stop(); // Substituindo o uso do método `off`
 ```
+
+## Cache
+
+Além de uma comunicação entre processos simultâneas, o `ivip-ipc` também fornece uma funcionalidade de cache compartilhado entre processos no Node.js. Ele permite que você mantenha os dados em cache sincronizados entre várias instâncias do aplicativo, mesmo em um ambiente de cluster.
+
+## Uso
+
+Aqui está um exemplo de como você pode usar o `Cache` para gerenciar um cache compartilhado entre processos:
+
+```javascript
+import IPC, { Cache } from "ivip-ipc-cache";
+
+// Ouvir eventos
+IPC.on("evento-personalizado", (mensagem) => {
+  console.log(`[${process.pid}] Evento personalizado recebido:`, mensagem);
+});
+
+// Enviar uma notificação para outros processos
+IPC.notify("evento-personalizado", `Mensagem da notificação de [${process.pid}]`);
+
+// Definir um valor no cache
+Cache.set("chave", "valor", 60); // Valor expirará após 60 segundos
+
+// Obter um valor do cache
+const valor = Cache.get("chave");
+
+console.log(`[${process.pid}]::`, valor); // Valor do cache ou null se expirado
+
+// Encerra a comunicação IPC e limpa o cache
+IPC.destroy();
+```
+
+## Documentação das propriedades Cache
+
+### `set(key: string | number, value: any, expirySeconds?: number)`
+Define um valor no cache compartilhado. O key é a chave para identificar o valor, o value é o valor a ser armazenado e o expirySeconds é o tempo de expiração em segundos.
+
+### `get(key: string | number)`
+Obtém um valor do cache compartilhado. Retorna o valor armazenado ou null se expirado.
+
+### `has(key: string | number)`
+Verifica se uma chave existe no cache.
+
+### `delete(key: string | number)`
+Remove um valor do cache compartilhado.
+
+### `cleanUp()`
+Remove valores expirados do cache compartilhado.
+
+### `memoize(name: string, fn: (...args: any[]) => any, expireInSeconds?: number)`
+Cria uma função memoizada que armazena o resultado em cache. Útil para funções que você deseja cache durante um determinado período.
 
 ## Contribuindo
 
