@@ -63,6 +63,7 @@ class Cache extends IPC_1.IPC {
     constructor() {
         super();
         this.defaultExpirySeconds = 60;
+        this.maxEntries = 5000;
         this.on("cache:update", ({ key, value, expirySeconds }) => {
             this.set(key, value, expirySeconds, false);
         });
@@ -77,6 +78,23 @@ class Cache extends IPC_1.IPC {
         return cache.size;
     }
     set(key, value, expirySeconds, notify = true) {
+        if (this.maxEntries > 0 && cache.size >= this.maxEntries && !cache.has(key)) {
+            let oldest = null;
+            const now = Date.now();
+            for (const [key, entry] of cache.entries()) {
+                if (entry.expires <= now) {
+                    cache.delete(key);
+                    oldest = null;
+                    break;
+                }
+                if (!oldest || entry.accessed < oldest.accessed) {
+                    oldest = { key, accessed: entry.accessed };
+                }
+            }
+            if (oldest !== null) {
+                cache.delete(oldest.key);
+            }
+        }
         expirySeconds = typeof expirySeconds === "number" ? expirySeconds : this.defaultExpirySeconds;
         value = (0, JSONStringify_1.default)(value);
         cache.set(key, { value: value, added: Date.now(), accessed: Date.now(), expires: calculateExpiryTime(expirySeconds) });

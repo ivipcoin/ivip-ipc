@@ -1,6 +1,7 @@
 import { IPC } from "./IPC";
 declare class Cache extends IPC {
     defaultExpirySeconds: number;
+    maxEntries: number;
     constructor();
     get size(): number;
     set(key: string | number, value: any, expirySeconds?: number, notify?: boolean): void;

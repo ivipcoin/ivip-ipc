@@ -52,6 +52,7 @@ LocalIPC.on("cache:sync-request", (data: ObjectCacheContent) => {
 
 class Cache extends IPC {
 	public defaultExpirySeconds: number = 60;
+	public maxEntries: number = 5000;
 
 	constructor() {
 		super();
@@ -74,6 +75,24 @@ class Cache extends IPC {
 	}
 
 	set(key: string | number, value: any, expirySeconds?: number, notify: boolean = true) {
+		if (this.maxEntries > 0 && cache.size >= this.maxEntries && !cache.has(key)) {
+			let oldest: { key: string | number; accessed: number } | null = null;
+			const now = Date.now();
+			for (const [key, entry] of cache.entries()) {
+				if (entry.expires <= now) {
+					cache.delete(key);
+					oldest = null;
+					break;
+				}
+				if (!oldest || entry.accessed < oldest.accessed) {
+					oldest = { key, accessed: entry.accessed };
+				}
+			}
+			if (oldest !== null) {
+				cache.delete(oldest.key);
+			}
+		}
+
 		expirySeconds = typeof expirySeconds === "number" ? expirySeconds : this.defaultExpirySeconds;
 		value = JSONStringify(value);
 		cache.set(key, { value: value, added: Date.now(), accessed: Date.now(), expires: calculateExpiryTime(expirySeconds) });
