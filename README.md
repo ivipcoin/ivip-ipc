@@ -86,7 +86,9 @@ Além de uma comunicação entre processos simultâneas, o `ivip-ipc` também fo
 Aqui está um exemplo de como você pode usar o `Cache` para gerenciar um cache compartilhado entre processos:
 
 ```javascript
-import IPC, { Cache } from "ivip-ipc-cache";
+const IPC = require('ivip-ipc').default;
+const Cache = require('ivip-ipc').Cache;
+//import IPC, { Cache } from "ivip-ipc";
 
 // Ouvir eventos
 IPC.on("evento-personalizado", (mensagem) => {
