@@ -61,9 +61,12 @@ const readLine = (line) => {
 /** Filtra e processa as linhas do arquivo. */
 const filterLines = (header, lines, inProcess = false) => {
     return lines
+        .sort((a, b) => {
+        return parseInt(a[0]) > parseInt(b[0]) ? 1 : parseInt(a[0]) < parseInt(b[0]) ? -1 : 0;
+    })
         .map((line) => {
         if (!inProcess && line.includes(ipcId) !== true) {
-            const content = JSON.parse(line[0]);
+            const content = JSON.parse(line[1]);
             notifyCallbackMap.forEach((callback) => {
                 callback(content);
             });
@@ -83,6 +86,17 @@ function differenceInSeconds(date1, date2) {
 let timestamp = Date.now();
 let timeDelay = undefined;
 let running = false;
+const breakLimitString = (input, maxLineLength = 120) => {
+    input = Buffer.from(input.replaceAll("\n", "><")).toString("base64");
+    const lines = [];
+    for (let i = 0; i < input.length; i += maxLineLength) {
+        lines.push(input.slice(i, i + maxLineLength));
+    }
+    return lines.join("\n");
+};
+const inverseBreakLimitString = (input) => {
+    return Buffer.from(input.split("\n").join(""), "base64").toString("utf-8").replaceAll("><", "\n");
+};
 const observerEvents = () => {
     if (running) {
         return;
@@ -98,7 +112,7 @@ const observerEvents = () => {
             const lockfile = proper_lockfile_1.default.checkSync(pathRoot);
             if (lockfile === false) {
                 proper_lockfile_1.default.lockSync(pathRoot);
-                const fileContent = fs_1.default.readFileSync(pathRoot, "utf-8");
+                const fileContent = inverseBreakLimitString(fs_1.default.readFileSync(pathRoot, "utf-8"));
                 let [header = [], ...lines] = fileContent
                     .split(/\n/)
                     .filter((line) => line.trim() !== "")
@@ -147,7 +161,7 @@ const observerEvents = () => {
                 }
                 const newData = [prepareLine(header), ...stability.map(prepareLine), ...linesWrite.filter((line, i, l) => l.indexOf(line) === i)].join("\n");
                 if (newData !== fileContent) {
-                    fs_1.default.writeFileSync(pathRoot, newData, "utf-8");
+                    fs_1.default.writeFileSync(pathRoot, breakLimitString(newData), "utf-8");
                 }
                 proper_lockfile_1.default.unlockSync(pathRoot);
             }
@@ -186,7 +200,7 @@ class IPC extends ivipbase_core_1.SimpleEventEmitter {
      * @param {any} message Mensagem para enviar aos processos.
      * @returns {Promise<void>}
      */
-    notify(event, message, justOut = true) {
+    notify(event, message, justOut = false) {
         return new Promise((resolve, reject) => {
             try {
                 const content = {
@@ -194,7 +208,7 @@ class IPC extends ivipbase_core_1.SimpleEventEmitter {
                     event: event,
                     message: message,
                 };
-                pending.push(prepareLine([JSON.stringify(content), ipcId]));
+                pending.push(prepareLine([content.timestamp.toString(), JSON.stringify(content), ipcId]));
                 //this.emit(content.event, content.message);
                 if (!justOut) {
                     notifyCallbackMap.forEach((callback) => {

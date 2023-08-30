@@ -36,7 +36,7 @@ class Cache extends IPC_1.default {
         expirySeconds = typeof expirySeconds === "number" ? expirySeconds : this.defaultExpirySeconds;
         cache.set(key, { value: ivipbase_core_1.Utils.cloneObject(value), added: Date.now(), accessed: Date.now(), expires: calculateExpiryTime(expirySeconds) });
         if (notify) {
-            this.notify("cache:update", { key, value, expirySeconds });
+            this.notify("cache:update", { key, value, expirySeconds }, true);
         }
     }
     get(key) {
@@ -54,7 +54,7 @@ class Cache extends IPC_1.default {
     delete(key, notify = true) {
         cache.delete(key);
         if (notify) {
-            this.notify("cache:delete", { key });
+            this.notify("cache:delete", { key }, true);
         }
     }
     cleanUp() {

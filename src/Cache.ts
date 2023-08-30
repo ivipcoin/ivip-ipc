@@ -41,7 +41,7 @@ class Cache extends IPC {
 		expirySeconds = typeof expirySeconds === "number" ? expirySeconds : this.defaultExpirySeconds;
 		cache.set(key, { value: Utils.cloneObject(value), added: Date.now(), accessed: Date.now(), expires: calculateExpiryTime(expirySeconds) });
 		if (notify) {
-			this.notify("cache:update", { key, value, expirySeconds });
+			this.notify("cache:update", { key, value, expirySeconds }, true);
 		}
 	}
 
@@ -62,7 +62,7 @@ class Cache extends IPC {
 	delete(key: string | number, notify: boolean = true) {
 		cache.delete(key);
 		if (notify) {
-			this.notify("cache:delete", { key });
+			this.notify("cache:delete", { key }, true);
 		}
 	}
 

@@ -68,9 +68,12 @@ const readLine = (line: string): string[] => {
 /** Filtra e processa as linhas do arquivo. */
 const filterLines = (header: string[], lines: string[][], inProcess: boolean = false): string[][] => {
 	return lines
+		.sort((a, b) => {
+			return parseInt(a[0]) > parseInt(b[0]) ? 1 : parseInt(a[0]) < parseInt(b[0]) ? -1 : 0;
+		})
 		.map((line: string[]): string[] => {
 			if (!inProcess && line.includes(ipcId) !== true) {
-				const content = JSON.parse(line[0]) as NotificationContent;
+				const content = JSON.parse(line[1]) as NotificationContent;
 
 				notifyCallbackMap.forEach((callback) => {
 					callback(content);
@@ -96,6 +99,19 @@ let timestamp = Date.now();
 let timeDelay: NodeJS.Timeout | undefined = undefined;
 let running: boolean = false;
 
+const breakLimitString = (input: string, maxLineLength: number = 120) => {
+	input = Buffer.from(input.replaceAll("\n", "><")).toString("base64");
+	const lines: string[] = [];
+	for (let i = 0; i < input.length; i += maxLineLength) {
+		lines.push(input.slice(i, i + maxLineLength));
+	}
+	return lines.join("\n");
+};
+
+const inverseBreakLimitString = (input: string) => {
+	return Buffer.from(input.split("\n").join(""), "base64").toString("utf-8").replaceAll("><", "\n");
+};
+
 const observerEvents = () => {
 	if (running) {
 		return;
@@ -117,7 +133,7 @@ const observerEvents = () => {
 			if (lockfile === false) {
 				properLockfile.lockSync(pathRoot);
 
-				const fileContent = fs.readFileSync(pathRoot, "utf-8");
+				const fileContent = inverseBreakLimitString(fs.readFileSync(pathRoot, "utf-8"));
 
 				let [header = [], ...lines]: string[][] = fileContent
 					.split(/\n/)
@@ -184,7 +200,7 @@ const observerEvents = () => {
 				const newData = [prepareLine(header), ...stability.map(prepareLine), ...linesWrite.filter((line, i, l) => l.indexOf(line) === i)].join("\n");
 
 				if (newData !== fileContent) {
-					fs.writeFileSync(pathRoot, newData, "utf-8");
+					fs.writeFileSync(pathRoot, breakLimitString(newData), "utf-8");
 				}
 
 				properLockfile.unlockSync(pathRoot);
@@ -229,7 +245,7 @@ export default class IPC extends SimpleEventEmitter {
 	 * @param {any} message Mensagem para enviar aos processos.
 	 * @returns {Promise<void>}
 	 */
-	notify(event: string, message: any, justOut: boolean = true): Promise<void> {
+	notify(event: string, message: any, justOut: boolean = false): Promise<void> {
 		return new Promise((resolve, reject) => {
 			try {
 				const content: NotificationContent = {
@@ -238,7 +254,7 @@ export default class IPC extends SimpleEventEmitter {
 					message: message,
 				};
 
-				pending.push(prepareLine([JSON.stringify(content), ipcId]));
+				pending.push(prepareLine([content.timestamp.toString(), JSON.stringify(content), ipcId]));
 				//this.emit(content.event, content.message);
 
 				if (!justOut) {

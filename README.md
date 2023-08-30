@@ -27,7 +27,7 @@ IPC.on('evento-personalizado', (mensagem) => {
 IPC.notify('evento-personalizado', 'Mensagem da notificação');
 
 // Encerra a comunicação IPC
-// ipc.destroy();
+// IPC.destroy();
 ```
 
 ## Documentação da Classe IPC
