@@ -1,4 +1,4 @@
-import IPC from "./IPC";
+import { IPC } from "./IPC";
 declare class Cache extends IPC {
     defaultExpirySeconds: number;
     constructor();

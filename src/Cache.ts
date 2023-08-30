@@ -1,7 +1,18 @@
-import { Utils } from "ivipbase-core";
-import IPC from "./IPC";
+import LocalIPC, { IPC } from "./IPC";
+import JSONStringify from "./JSONStringify";
 
-const cache: Map<string | number, { value: any; added: number; expires: number; accessed: number }> = new Map();
+interface CacheContent {
+	value: any;
+	added: number;
+	expires: number;
+	accessed: number;
+}
+
+interface ObjectCacheContent {
+	[key: string | number]: CacheContent;
+}
+
+const cache: Map<string | number, CacheContent> = new Map();
 
 const calculateExpiryTime = (expirySeconds: number) => (expirySeconds > 0 ? Date.now() + expirySeconds * 1000 : Infinity);
 
@@ -18,6 +29,27 @@ setInterval(() => {
 	cleanUp();
 }, 60 * 1000);
 
+const joinCache = (...dataList: Array<ObjectCacheContent>): ObjectCacheContent => {
+	dataList.forEach((data: ObjectCacheContent) => {
+		for (let key in data) {
+			const { added } = cache.get(key) ?? data[key];
+			if (added <= data[key].added) {
+				cache.set(key, data[key]);
+			}
+		}
+	});
+
+	return Object.fromEntries([...cache]);
+};
+
+LocalIPC.on("cache:sync-response", (data: ObjectCacheContent) => {
+	joinCache(data);
+});
+
+LocalIPC.on("cache:sync-request", (data: ObjectCacheContent) => {
+	LocalIPC.notify("cache:sync-response", joinCache(data), true);
+});
+
 class Cache extends IPC {
 	public defaultExpirySeconds: number = 60;
 
@@ -31,6 +63,10 @@ class Cache extends IPC {
 		this.on("cache:delete", ({ key }) => {
 			this.delete(key, false);
 		});
+
+		setTimeout(() => {
+			LocalIPC.notify("cache:sync-request", Object.fromEntries([...cache]), true);
+		}, 2000 + Math.round(Math.random() * 2000));
 	}
 
 	get size() {
@@ -39,7 +75,8 @@ class Cache extends IPC {
 
 	set(key: string | number, value: any, expirySeconds?: number, notify: boolean = true) {
 		expirySeconds = typeof expirySeconds === "number" ? expirySeconds : this.defaultExpirySeconds;
-		cache.set(key, { value: Utils.cloneObject(value), added: Date.now(), accessed: Date.now(), expires: calculateExpiryTime(expirySeconds) });
+		value = JSONStringify(value);
+		cache.set(key, { value: value, added: Date.now(), accessed: Date.now(), expires: calculateExpiryTime(expirySeconds) });
 		if (notify) {
 			this.notify("cache:update", { key, value, expirySeconds }, true);
 		}
@@ -52,7 +89,7 @@ class Cache extends IPC {
 		}
 		entry.expires = calculateExpiryTime(this.defaultExpirySeconds);
 		entry.accessed = Date.now();
-		return Utils.cloneObject(entry.value);
+		return JSON.parse(entry.value);
 	}
 
 	has(key: string | number) {
@@ -73,7 +110,7 @@ class Cache extends IPC {
 	memoize(name: string, fn: (...arg: any[]) => any, expireInSeconds?: number) {
 		const cache = this;
 		return async function (...args: any[]) {
-			const key = `${name}__${JSON.stringify(args)}`;
+			const key = `${name}__${JSONStringify(args)}`;
 			const cachedValue = cache.get(key);
 			if (cachedValue !== null) {
 				return cachedValue;

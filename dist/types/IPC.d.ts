@@ -1,5 +1,5 @@
 import { SimpleEventEmitter } from "ivipbase-core";
-export default class IPC extends SimpleEventEmitter {
+export declare class IPC extends SimpleEventEmitter {
     private id;
     /**
      * A classe `IPC` é definida como uma subclasse de `SimpleEventEmitter` e exportada como padrão. Ela implementa a comunicação entre os processos.
@@ -15,4 +15,6 @@ export default class IPC extends SimpleEventEmitter {
     /** Encerra a comunicação IPC. */
     destroy(): void;
 }
+declare const internalIPC: IPC;
+export default internalIPC;
 //# sourceMappingURL=IPC.d.ts.map

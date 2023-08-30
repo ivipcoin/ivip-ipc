@@ -3,12 +3,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.IPC = void 0;
 const ivipbase_core_1 = require("ivipbase-core");
 const cluster_1 = __importDefault(require("cluster"));
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
 const chokidar_1 = __importDefault(require("chokidar"));
 const proper_lockfile_1 = __importDefault(require("proper-lockfile"));
+const JSONStringify_1 = __importDefault(require("./JSONStringify.js"));
 /** Verificam se o processo é um worker, primary ou master do cluster. */
 const isCluster = cluster_1.default.isWorker || cluster_1.default.isPrimary || cluster_1.default.isMaster;
 /** Verificam se o processo é um primary ou master do cluster. */
@@ -64,18 +66,21 @@ const filterLines = (header, lines, inProcess = false) => {
         .sort((a, b) => {
         return parseInt(a[0]) > parseInt(b[0]) ? 1 : parseInt(a[0]) < parseInt(b[0]) ? -1 : 0;
     })
-        .map((line) => {
-        if (!inProcess && line.includes(ipcId) !== true) {
-            const content = JSON.parse(line[1]);
-            notifyCallbackMap.forEach((callback) => {
-                callback(content);
-            });
-            line.push(ipcId);
+        .map(([time, content, ...ipcIds]) => {
+        if (!inProcess && ipcIds.includes(ipcId) !== true) {
+            try {
+                const result = JSON.parse(content);
+                notifyCallbackMap.forEach((callback) => {
+                    callback(result);
+                });
+            }
+            catch { }
+            ipcIds.push(ipcId);
         }
-        return line;
+        return [time, content, ...ipcIds];
     })
-        .filter((line) => {
-        return inProcess || !header.slice(1).every((id) => line.filter((id) => header.includes(id)).includes(id));
+        .filter(([time, content, ...ipcIds]) => {
+        return inProcess || !header.slice(1).every((id) => ipcIds.filter((id) => header.slice(1).includes(id)).includes(id));
     });
 };
 function differenceInSeconds(date1, date2) {
@@ -87,7 +92,7 @@ let timestamp = Date.now();
 let timeDelay = undefined;
 let running = false;
 const breakLimitString = (input, maxLineLength = 120) => {
-    input = Buffer.from(input.replaceAll("\n", "><")).toString("base64");
+    input = Buffer.from(input.replaceAll("\n", "<<break-limit-string>>")).toString("base64");
     const lines = [];
     for (let i = 0; i < input.length; i += maxLineLength) {
         lines.push(input.slice(i, i + maxLineLength));
@@ -95,7 +100,7 @@ const breakLimitString = (input, maxLineLength = 120) => {
     return lines.join("\n");
 };
 const inverseBreakLimitString = (input) => {
-    return Buffer.from(input.split("\n").join(""), "base64").toString("utf-8").replaceAll("><", "\n");
+    return Buffer.from(input.split("\n").join(""), "base64").toString("utf-8").replaceAll("<<break-limit-string>>", "\n");
 };
 const observerEvents = () => {
     if (running) {
@@ -151,7 +156,7 @@ const observerEvents = () => {
                     .apply([], stability.map(([k, t, ...ids]) => ids))
                     .filter((v, i, l) => l.indexOf(v) === i);
                 lines = (lines ?? []).filter(([v]) => v !== "stability_ipc_ids");
-                filterLines(header, lines ?? [], inProcess).forEach((line) => {
+                filterLines([header[0], ...ipcList], lines ?? [], inProcess).forEach((line) => {
                     linesWrite.push(prepareLine(line));
                 });
                 if (!inProcess) {
@@ -203,19 +208,23 @@ class IPC extends ivipbase_core_1.SimpleEventEmitter {
     notify(event, message, justOut = false) {
         return new Promise((resolve, reject) => {
             try {
-                const content = {
-                    timestamp: Date.now(),
-                    event: event,
-                    message: message,
-                };
-                pending.push(prepareLine([content.timestamp.toString(), JSON.stringify(content), ipcId]));
-                //this.emit(content.event, content.message);
-                if (!justOut) {
-                    notifyCallbackMap.forEach((callback) => {
-                        callback(content);
-                    });
+                if (notifyCallbackMap.has(this.id)) {
+                    const content = {
+                        timestamp: Date.now(),
+                        event: event,
+                        message: message,
+                    };
+                    pending.push(prepareLine([content.timestamp.toString(), (0, JSONStringify_1.default)(content), ipcId]));
+                    //this.emit(content.event, content.message);
+                    if (!justOut) {
+                        notifyCallbackMap.forEach((callback, id) => {
+                            if (id !== this.id) {
+                                callback(content);
+                            }
+                        });
+                    }
+                    observerEvents();
                 }
-                observerEvents();
                 resolve();
             }
             catch (e) {
@@ -228,5 +237,7 @@ class IPC extends ivipbase_core_1.SimpleEventEmitter {
         notifyCallbackMap.delete(this.id);
     }
 }
-exports.default = IPC;
+exports.IPC = IPC;
+const internalIPC = new IPC();
+exports.default = internalIPC;
 //# sourceMappingURL=IPC.js.map

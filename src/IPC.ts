@@ -4,8 +4,8 @@ import path from "path";
 import fs from "fs";
 import chokidar from "chokidar";
 import properLockfile from "proper-lockfile";
-import { EventCacheType, EventMessageCache, NotificationContent } from "./type";
-import Cache from "./Cache";
+import { NotificationContent } from "./type";
+import JSONStringify from "./JSONStringify";
 
 /** Verificam se o processo é um worker, primary ou master do cluster. */
 const isCluster: boolean = cluster.isWorker || cluster.isPrimary || cluster.isMaster;
@@ -71,20 +71,22 @@ const filterLines = (header: string[], lines: string[][], inProcess: boolean = f
 		.sort((a, b) => {
 			return parseInt(a[0]) > parseInt(b[0]) ? 1 : parseInt(a[0]) < parseInt(b[0]) ? -1 : 0;
 		})
-		.map((line: string[]): string[] => {
-			if (!inProcess && line.includes(ipcId) !== true) {
-				const content = JSON.parse(line[1]) as NotificationContent;
+		.map(([time, content, ...ipcIds]: string[]): string[] => {
+			if (!inProcess && ipcIds.includes(ipcId) !== true) {
+				try {
+					const result = JSON.parse(content) as NotificationContent;
 
-				notifyCallbackMap.forEach((callback) => {
-					callback(content);
-				});
+					notifyCallbackMap.forEach((callback) => {
+						callback(result);
+					});
+				} catch {}
 
-				line.push(ipcId);
+				ipcIds.push(ipcId);
 			}
-			return line;
+			return [time, content, ...ipcIds];
 		})
-		.filter((line: string[]) => {
-			return inProcess || !header.slice(1).every((id: string) => line.filter((id: string) => header.includes(id)).includes(id));
+		.filter(([time, content, ...ipcIds]: string[]) => {
+			return inProcess || !header.slice(1).every((id: string) => ipcIds.filter((id: string) => header.slice(1).includes(id)).includes(id));
 		});
 };
 
@@ -100,7 +102,7 @@ let timeDelay: NodeJS.Timeout | undefined = undefined;
 let running: boolean = false;
 
 const breakLimitString = (input: string, maxLineLength: number = 120) => {
-	input = Buffer.from(input.replaceAll("\n", "><")).toString("base64");
+	input = Buffer.from(input.replaceAll("\n", "<<break-limit-string>>")).toString("base64");
 	const lines: string[] = [];
 	for (let i = 0; i < input.length; i += maxLineLength) {
 		lines.push(input.slice(i, i + maxLineLength));
@@ -109,7 +111,7 @@ const breakLimitString = (input: string, maxLineLength: number = 120) => {
 };
 
 const inverseBreakLimitString = (input: string) => {
-	return Buffer.from(input.split("\n").join(""), "base64").toString("utf-8").replaceAll("><", "\n");
+	return Buffer.from(input.split("\n").join(""), "base64").toString("utf-8").replaceAll("<<break-limit-string>>", "\n");
 };
 
 const observerEvents = () => {
@@ -187,7 +189,7 @@ const observerEvents = () => {
 
 				lines = (lines ?? []).filter(([v]) => v !== "stability_ipc_ids");
 
-				filterLines(header, lines ?? [], inProcess).forEach((line: string[]) => {
+				filterLines([header[0], ...ipcList], lines ?? [], inProcess).forEach((line: string[]) => {
 					linesWrite.push(prepareLine(line));
 				});
 
@@ -226,7 +228,7 @@ chokidar
 		observerEvents();
 	});
 
-export default class IPC extends SimpleEventEmitter {
+export class IPC extends SimpleEventEmitter {
 	private id: string = Math.round(Math.random() * Date.now()).toString();
 
 	/**
@@ -248,22 +250,26 @@ export default class IPC extends SimpleEventEmitter {
 	notify(event: string, message: any, justOut: boolean = false): Promise<void> {
 		return new Promise((resolve, reject) => {
 			try {
-				const content: NotificationContent = {
-					timestamp: Date.now(),
-					event: event,
-					message: message,
-				};
+				if (notifyCallbackMap.has(this.id)) {
+					const content: NotificationContent = {
+						timestamp: Date.now(),
+						event: event,
+						message: message,
+					};
 
-				pending.push(prepareLine([content.timestamp.toString(), JSON.stringify(content), ipcId]));
-				//this.emit(content.event, content.message);
+					pending.push(prepareLine([content.timestamp.toString(), JSONStringify(content), ipcId]));
+					//this.emit(content.event, content.message);
 
-				if (!justOut) {
-					notifyCallbackMap.forEach((callback) => {
-						callback(content);
-					});
+					if (!justOut) {
+						notifyCallbackMap.forEach((callback, id) => {
+							if (id !== this.id) {
+								callback(content);
+							}
+						});
+					}
+
+					observerEvents();
 				}
-
-				observerEvents();
 
 				resolve();
 			} catch (e) {
@@ -277,3 +283,7 @@ export default class IPC extends SimpleEventEmitter {
 		notifyCallbackMap.delete(this.id);
 	}
 }
+
+const internalIPC = new IPC();
+
+export default internalIPC;

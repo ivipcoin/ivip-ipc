@@ -8,6 +8,5 @@ const IPC_1 = __importDefault(require("./IPC"));
 exports.IPC = IPC_1.default;
 const Cache_1 = __importDefault(require("./Cache"));
 exports.Cache = Cache_1.default;
-const internalIPC = new IPC_1.default();
-exports.default = internalIPC;
+exports.default = IPC_1.default;
 //# sourceMappingURL=index.js.map
