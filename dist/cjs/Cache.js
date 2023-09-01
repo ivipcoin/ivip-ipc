@@ -22,12 +22,9 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const IPC_1 = __importStar(require("./IPC"));
-const JSONStringify_1 = __importDefault(require("./JSONStringify"));
+const ivip_utils_1 = require("ivip-utils");
 const cache = new Map();
 const calculateExpiryTime = (expirySeconds) => (expirySeconds > 0 ? Date.now() + expirySeconds * 1000 : Infinity);
 const cleanUp = () => {
@@ -96,7 +93,7 @@ class Cache extends IPC_1.IPC {
             }
         }
         expirySeconds = typeof expirySeconds === "number" ? expirySeconds : this.defaultExpirySeconds;
-        value = (0, JSONStringify_1.default)(value);
+        value = (0, ivip_utils_1.JSONStringify)(value);
         cache.set(key, { value: value, added: Date.now(), accessed: Date.now(), expires: calculateExpiryTime(expirySeconds) });
         if (notify) {
             this.notify("cache:update", { key, value, expirySeconds }, true);
@@ -126,7 +123,7 @@ class Cache extends IPC_1.IPC {
     memoize(name, fn, expireInSeconds) {
         const cache = this;
         return async function (...args) {
-            const key = `${name}__${(0, JSONStringify_1.default)(args)}`;
+            const key = `${name}__${(0, ivip_utils_1.JSONStringify)(args)}`;
             const cachedValue = cache.get(key);
             if (cachedValue !== null) {
                 return cachedValue;

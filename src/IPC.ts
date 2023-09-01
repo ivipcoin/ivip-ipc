@@ -1,11 +1,10 @@
-import { SimpleEventEmitter } from "ivipbase-core";
+import { SimpleEventEmitter, JSONStringify } from "ivip-utils";
 import cluster from "cluster";
 import path from "path";
 import fs from "fs";
 import chokidar from "chokidar";
 import properLockfile from "proper-lockfile";
 import { NotificationContent } from "./type";
-import JSONStringify from "./JSONStringify";
 
 /** Verificam se o processo é um worker, primary ou master do cluster. */
 const isCluster: boolean = cluster.isWorker || cluster.isPrimary || cluster.isMaster;

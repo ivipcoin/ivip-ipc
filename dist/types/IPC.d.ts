@@ -1,4 +1,4 @@
-import { SimpleEventEmitter } from "ivipbase-core";
+import { SimpleEventEmitter } from "ivip-utils";
 export declare class IPC extends SimpleEventEmitter {
     private id;
     /**

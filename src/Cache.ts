@@ -1,5 +1,5 @@
 import LocalIPC, { IPC } from "./IPC";
-import JSONStringify from "./JSONStringify";
+import { JSONStringify } from "ivip-utils";
 
 interface CacheContent {
 	value: any;

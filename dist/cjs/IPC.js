@@ -4,13 +4,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.IPC = void 0;
-const ivipbase_core_1 = require("ivipbase-core");
+const ivip_utils_1 = require("ivip-utils");
 const cluster_1 = __importDefault(require("cluster"));
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
 const chokidar_1 = __importDefault(require("chokidar"));
 const proper_lockfile_1 = __importDefault(require("proper-lockfile"));
-const JSONStringify_1 = __importDefault(require("./JSONStringify"));
 /** Verificam se o processo é um worker, primary ou master do cluster. */
 const isCluster = cluster_1.default.isWorker || cluster_1.default.isPrimary || cluster_1.default.isMaster;
 /** Verificam se o processo é um primary ou master do cluster. */
@@ -188,7 +187,7 @@ chokidar_1.default
     .on("change", (file) => {
     observerEvents();
 });
-class IPC extends ivipbase_core_1.SimpleEventEmitter {
+class IPC extends ivip_utils_1.SimpleEventEmitter {
     /**
      * A classe `IPC` é definida como uma subclasse de `SimpleEventEmitter` e exportada como padrão. Ela implementa a comunicação entre os processos.
      */
@@ -214,7 +213,7 @@ class IPC extends ivipbase_core_1.SimpleEventEmitter {
                         event: event,
                         message: message,
                     };
-                    pending.push(prepareLine([content.timestamp.toString(), (0, JSONStringify_1.default)(content), ipcId]));
+                    pending.push(prepareLine([content.timestamp.toString(), (0, ivip_utils_1.JSONStringify)(content), ipcId]));
                     //this.emit(content.event, content.message);
                     if (!justOut) {
                         notifyCallbackMap.forEach((callback, id) => {

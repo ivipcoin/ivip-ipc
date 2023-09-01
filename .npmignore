@@ -5,3 +5,4 @@ spec
 tsconfig*.*
 create-package-files
 test
+*.tgz
