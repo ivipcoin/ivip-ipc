@@ -51,7 +51,6 @@
 	"dependencies": {
 		"chokidar": "^3.5.3",
 		"dotenv": "^16.0.3",
-		"ejs": "^3.1.8",
 		"ivip-utils": "^1.0.3",
 		"proper-lockfile": "^4.1.2"
 	},
@@ -60,6 +59,7 @@
 		"@types/proper-lockfile": "^4.1.2",
 		"@typescript-eslint/eslint-plugin": "^6.2.1",
 		"@typescript-eslint/parser": "^6.2.1",
+		"ejs": "^3.1.8",
 		"eslint": "^8.46.0",
 		"esm": "^3.2.25",
 		"nodemon": "^3.0.1",
